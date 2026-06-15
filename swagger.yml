@@ -1,0 +1,5566 @@
+swagger: "2.0"
+
+info:
+  description: "Wansafar API REST API Routes"
+  version: "0.0.1"
+  title: "Wansafar API"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "shubham@orgosys.com"
+  license:
+    name: "Wansafar"
+    url: "https://wansafar.com"
+tags:
+- name: "healthcheck"
+  description: "healthcheck"
+- name: "auth"
+  description: "auth"
+- name: "user"
+  description: "user"
+- name: "admin"
+  description: "admin"
+- name: "tours"
+  description: "tours"
+- name: "wishlist"
+  description: "wishlist"
+- name: "reserves"
+  description: "reserves and parks"
+
+schemes:
+- "https"
+- "http"
+
+securityDefinitions:
+  bearerToken:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: |
+      Use a Bearer token to authenticate requests. Format:
+      Authorization: Bearer {token}
+  APIkey:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: API Key authentication. Pass the API key in the Authorization header.
+
+paths:
+  '/healthcheck':
+    get:
+      tags:
+      - healthcheck
+      operationId: Healthcheck
+      summary: Healthcheck endpoints
+      consumes:
+      - application/json
+      parameters: []
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      responses:
+        200:
+          description: Successful request
+          schema:
+            $ref: "#/definitions/Success"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/auth/google/login':
+    get:
+      tags:
+      - auth
+      operationId: GoogleLogin
+      summary: Redirect to Google Sign-In URL
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      responses:
+        200:
+          description: Accepted request for Google Sign-In URL
+          headers:
+            Location:
+              type: string
+              description: The URL to redirect to for Google Sign-In
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/auth/google/callback':
+    get:
+      tags:
+      - auth
+      operationId: GoogleCallback
+      summary: Google OAuth2 callback to verify state and retrieve authorization code
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - name: state
+          in: query
+          required: true
+          type: string
+          description: The state parameter to prevent CSRF attacks
+        - name: code
+          in: query
+          required: true
+          type: string
+          description: The authorization code received from Google
+      responses:
+        302:
+          description: Redirect to specific URL after successful callback handling
+          headers:
+            Location:
+              type: string
+              description: The URL to redirect to after successful callback handling
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/oauth/google/token':
+    get:
+      tags:
+      - auth
+      operationId: SendGoogleToken
+      summary: Retrieve Google Sign-In token
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - name: google_sign
+          in: query
+          required: true
+          type: string
+          description: The token received from Google Sign-In
+      responses:
+        200:
+          description: Successful token retrieval
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        406:
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/auth/forgot-password':
+    post:
+      tags:
+      - auth
+      operationId: ForgotPassword
+      summary: Send a password reset email
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - name: payload
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ForgotPasswordRequest"
+      responses:
+        200:
+          description: Reset email sent successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+        404:
+          description: User not found
+          schema:
+            $ref: "#/definitions/Error"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/Error"
+
+  '/v1/auth/reset-password':
+    post:
+      tags:
+      - auth
+      operationId: ResetPassword
+      summary: Reset password using a token
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - name: payload
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ResetPasswordRequest"
+      responses:
+        200:
+          description: Password reset successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request (Invalid or expired token)
+          schema:
+            $ref: "#/definitions/Error"
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: "#/definitions/Error"
+
+  '/v1/user':
+    post:
+      tags:
+      - user
+      operationId: CreateUser
+      summary: Create a new user
+      produces:
+      - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/UserRequest'
+      responses:
+        201:
+          description: User created successfully
+          schema:
+            $ref: "#/definitions/UserResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    get:
+      tags:
+      - user
+      operationId: GetUser
+      summary: Retrieve user information
+      produces:
+      - application/json
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Successful user retrieval
+          schema:
+            $ref: "#/definitions/UserResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      tags:
+      - user
+      operationId: DeleteUser
+      summary: Delete user information
+      produces:
+      - application/json
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: User Deleted Sucessfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/user/profile':
+    patch:
+      tags:
+        - user
+      operationId: PatchUserProfile
+      summary: Partially update user profile (name, email, phone, preferences)
+      description: |
+        Partially update user profile fields. Only allowed fields (name, email, phone, preferences) can be updated. Optimistic locking and validation are applied. Returns only updated fields.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      security:
+        - bearerToken: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/UserProfilePatchRequest'
+      responses:
+        200:
+          description: Profile updated successfully (returns only updated fields)
+          schema:
+            $ref: '#/definitions/UserProfilePatchResponse'
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Conflict (optimistic locking failure)
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  '/v1/partner':
+    post:
+      tags: 
+       - partner
+      operationId: CreatePartner
+      summary: Create or Onboard a new partner
+      security:
+        - APIkey: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/PartnerOnboardingRequest'
+      responses:
+        201:
+          description: Partner created successfully
+          schema:
+            $ref: "#/definitions/PartnerResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Partner already exists
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'    
+
+    get:
+      tags: 
+       - partner
+      operationId: ListPartner
+      summary: List partner with optional filtering
+      security:
+        - APIkey: []
+      parameters:
+        - name: status
+          in: query
+          type: string
+          enum: [pending, approved, rejected]
+          description: Filter by verification status (optional)
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of items to return (optional, default 20)
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip (optional, default 0)
+      responses:
+        200:
+          description: List of partner
+          schema:
+            type: object
+            properties:
+              partner:
+                type: array
+                items:
+                  $ref: "#/definitions/PartnerResponse"
+              total:
+                type: integer
+              limit:
+                type: integer
+              offset:
+                type: integer
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/partner/top':
+    get:
+      tags:
+        - partner
+      operationId: GetTopPartner
+      summary: "Get top partner based on rating and performance"
+      description: "Returns top partner sorted by rating, review count, and performance metrics"
+      security:
+        - APIkey: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 10
+          description: Number of top partner to return (default 10)
+        - name: minRating
+          in: query
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Minimum rating filter (optional)
+      responses:
+        200:
+          description: Top partner list
+          schema:
+            type: object
+            properties:
+              partner:
+                type: array
+                items:
+                  $ref: "#/definitions/PartnerResponse"
+              total:
+                type: integer
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/partner/{partnerId}':
+    get:
+      tags: 
+       - partner
+      operationId: GetPartner
+      summary: Get partner by ID
+      security:
+        - APIkey: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the partner
+      responses:
+        200:
+          description: Partner details
+          schema:
+            $ref: "#/definitions/PartnerResponse"
+        404:
+          description: Partner not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    put:
+      tags: 
+       - partner
+      operationId: UpdatePartner
+      summary: Update partner details (includes approval/rejection)
+      security:
+        - bearerToken: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the partner
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/PartnerOnboardingRequest'
+      responses:
+        200:
+          description: Partner updated successfully
+          schema:
+            $ref: "#/definitions/PartnerResponse"
+        400:
+          description: Bad Request
+        404:
+          description: Partner not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      tags: 
+       - partner
+      operationId: DeletePartner
+      summary: Delete partner
+      security:
+        - bearerToken: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the partner
+      responses:
+        200:
+          description: Partner deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        404:
+          description: Partner not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  /v1/partner/tours:
+    post:
+      tags: 
+       - partner
+      operationId: CreatePartnerTour
+      summary: Create a new tour
+      security:
+        - bearerToken: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/CreateTourRequest'
+      responses:
+        201:
+          description: Tour created successfully
+          schema:
+            $ref: "#/definitions/TourResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Tour with similar details already exists
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+  
+    get:
+      tags:
+        - partner
+      summary: List or Get Partner Tours with Bookings
+      description: Retrieve tours created by the partner. Can filter bookings within the tour by status.
+      operationId: listOrGetPartnerTour
+      security:
+        - bearerToken: [] 
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+        - name: tourId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Optional UUID of a specific tour to fetch.
+        - name: bookingId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Optional UUID to filter a specific booking within the tour.
+        - name: bookingStatus
+          in: query
+          type: string
+          enum: [upcoming, completed, cancelled, history]
+          description: >
+            Filter bookings inside the tour by status. 
+            If left empty, returns all bookings for the tour.
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+              tours:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/definitions/TourResponse'
+                    - type: object
+                      properties:
+                        bookings:
+                          type: array
+                          description: List of bookings associated with this tour based on the filter.
+                          items: 
+                            type: object
+                            properties:
+                              booking_id:
+                                type: string
+                              user_name:
+                                type: string
+                              booking_status:
+                                type: string
+                              booked_at:
+                                type: integer
+                                format: int64
+                              travellers:
+                                type: array
+                                items:
+                                  $ref: '#/definitions/Traveller'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+    patch:
+      tags:
+        - partner
+      summary: Update a partner tour
+      description: Update specific fields of a tour.
+      operationId: updatePartnerTour
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      security:
+        - bearerToken: []
+      parameters:
+        - name: tourId
+          in: query
+          description: The UUID of the tour to update.
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: Fields to update.
+          required: true
+          schema:
+            $ref: '#/definitions/CreateTourRequest'
+      responses:
+        200:
+          description: Tour updated successfully
+          schema:
+            $ref: '#/definitions/TourResponse'
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /v1/partner/bookings:
+    get:
+      tags:
+        - partner
+      summary: List Partner Bookings
+      description: Retrieve bookings created by the partner. Can filter bookings by status.
+      operationId: listPartnerBookings
+      security:
+        - APIkey: []
+        - bearerToken: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+        - name: tourId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Optional UUID of a specific tour to fetch.
+        - name: bookingId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Optional UUID to filter a specific booking within the tour.
+        - name: bookingStatus
+          in: query
+          type: string
+          enum: [upcoming, completed, cancelled, history, new]
+          description: >
+            Filter bookings inside the tour by status. 
+            - 'new': Returns bookings requiring action (Booked, Pending, Under_review).
+            - 'upcoming': Returns confirmed future bookings.
+            - 'history': Returns past bookings.
+            If left empty, returns all bookings for the tour.
+      responses:
+        200:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/BookingResponse'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /v1/partner/bookings/status:
+    patch:
+      tags:
+        - partner
+      summary: Accept or Decline Bookings (Single or Bulk)
+      description: |
+        Update booking status. 
+        **Usage:**
+        - To update a single booking: Pass `bookingId` in query.
+        - To bulk update ALL bookings for a tour: Pass `tourId` in query.
+        - The new `status` is sent in the request body.
+      operationId: updateBookingStatus
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      security:
+        - bearerToken: []
+      parameters:
+        - name: bookingId
+          in: query
+          required: false
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the specific booking to update.
+        - name: tourId
+          in: query
+          required: false
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the Tour. If provided, updates ALL bookings for this tour.
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - status
+            properties:
+              status:
+                type: string
+                enum: [Accepted, Declined]
+                description: The new status to apply to the target booking(s).
+      responses:
+        200:
+          description: Booking status updated
+          schema:
+            $ref: '#/definitions/BookingStatusUpdateResponse'
+        400:
+          description: Invalid Request (e.g., missing status or missing target ID)
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Booking or Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  '/v1/admin/signin':
+    post:
+      tags:
+        - admin
+      operationId: AdminSignin
+      summary: Admin Login
+      description: |
+        Public endpoint for the Owner/Super Admin to log in.
+        Returns a Bearer token which must be used in the Authorization header for protected actions (like creating new admins).
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      security: [] 
+      parameters:
+        - in: body
+          name: payload
+          description: Admin credentials
+          required: true
+          schema:
+            $ref: '#/definitions/AdminSigninRequest'
+      responses:
+        200:
+          description: Login successful
+          schema:
+            $ref: '#/definitions/AdminSigninResponse'
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/register':
+    post:
+      tags:
+        - admin
+      operationId: CreateNewAdmin
+      summary: Create a new Admin (Protected)
+      description: |
+        Creates a new admin account.
+        **Strictly Protected:** This endpoint requires the Bearer token received from `/v1/admin/signin`.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      security:
+        - bearerToken: []
+      parameters:
+        - in: body
+          name: payload
+          description: Details for the NEW admin you want to create
+          required: true
+          schema:
+            $ref: '#/definitions/AdminCreateRequest'
+      responses:
+        201:
+          description: New Admin created successfully
+          schema:
+            $ref: '#/definitions/AdminResponse'
+        400:
+          description: Invalid input or Email already exists
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized (Token missing/invalid)
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Insufficient permissions)
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Error
+          schema:
+            $ref: '#/definitions/Error'
+  
+  '/v1/admin/me':
+    get:
+      tags: 
+       - admin
+      operationId: GetCurrentAdmin
+      summary: Get current authenticated admin's profile
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Current admin details
+          schema:
+            $ref: '#/definitions/AdminResponse'
+        401:
+          description: Unauthorized
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    put:
+      tags: 
+       - admin
+      operationId: UpdateCurrentAdmin
+      summary: Update current admin's profile (limited fields)
+      security:
+        - bearerToken: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/AdminSelfUpdateRequest'
+      responses:
+        200:
+          description: Profile updated successfully
+          schema:
+            $ref: '#/definitions/AdminResponse'
+        400:
+          description: Bad Request
+        401:
+          description: Unauthorized
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/partners':
+    post:
+      tags: 
+        - admin
+      operationId: AdminCreatePartner
+      summary: Admin - Create or Onboard a new partner
+      description: Allows an admin to directly onboard a new partner from the admin dashboard.
+      security:
+        - bearerToken: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/PartnerOnboardingRequest'
+      responses:
+        201:
+          description: Partner created successfully by admin
+          schema:
+            $ref: "#/definitions/PartnerAdminResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized - Invalid or missing admin token
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Partner already exists
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+    get:
+      tags: 
+       - admin
+      operationId: AdminListPartners
+      summary: Admin view of all partners with admin-specific data
+      security:
+        - bearerToken: []
+      parameters:
+        - name: status
+          in: query
+          type: string
+          enum: [pending, approved, rejected]
+          description: Filter by verification status (optional)
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of items to return (optional, default 20)
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip (optional, default 0)
+      responses:
+        200:
+          description: Admin view of partners
+          schema:
+            type: object
+            properties:
+              partners:
+                type: array
+                items:
+                  $ref: "#/definitions/PartnerAdminResponse"
+              total:
+                type: integer
+              pendingCount:
+                type: integer
+                description: Only included when filtering by status
+              approvedCount:
+                type: integer
+                description: Only included when filtering by status
+              rejectedCount:
+                type: integer
+                description: Only included when filtering by status
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      tags:
+        - admin
+      operationId: AdminDeletePartner
+      summary: Admin - Delete a partner
+      description: Allows an admin to completely remove a partner and their associated data from the system.
+      security:
+        - bearerToken: []
+      parameters:
+        - name: partnerId
+          in: query
+          required: false
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Optional UUID of the partner to delete via query parameter.
+      responses:
+        200:
+          description: Partner deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Partner not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error' 
+
+    put:
+      tags:
+        - admin
+      operationId: AdminUpdatePartner
+      summary: Admin - Update partner details
+      description: Allows an admin to fully update a partner's details from the admin dashboard.
+      security:
+        - bearerToken: []
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: partnerId
+          in: query
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the partner to update.
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/PartnerOnboardingRequest'
+      responses:
+        200:
+          description: Partner updated successfully
+          schema:
+            $ref: "#/definitions/PartnerAdminResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Partner not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/partners/{partnerId}/verify':
+    patch:
+      tags:
+        - admin
+      operationId: AdminVerifyPartner
+      summary: Update partner verification status
+      description: |
+        Admin action to Approve, Reject, or Reset a partner's verification.
+        Uses PATCH because it partially updates the partner resource.
+      security:
+        - bearerToken: []
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the partner
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/PartnerVerificationRequest'
+      responses:
+        200:
+          description: Verification status updated successfully
+          schema:
+            $ref: '#/definitions/PartnerAdminResponse'
+        400:
+          description: Invalid status or missing required notes for rejection
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Partner not found
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/bookings':
+    get:
+      tags:
+        - admin
+      operationId: AdminListBookings
+      summary: Admin view of all bookings with admin specific data
+      security:
+        - bearerToken: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of items to return
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip
+        - name: status
+          in: query
+          type: string
+          enum: [BOOKED, COMPLETED, CANCELLED, UNDER_REVIEW, REFUND_PROCESSING, ACCEPTED, REJECTED]
+          description: Optional filter by booking status
+        - name: bookingId
+          in: query
+          type: string
+          description: Optional search by specific Booking UUID
+        - name: partnerId
+          in: query
+          type: string
+          format: uuid
+          description: Filter bookings by Partner ID
+        - name: tourId
+          in: query
+          type: string
+          format: uuid
+          description: Filter bookings by Tour ID
+      responses:
+        200:
+          description: List of all bookings
+          schema:
+            $ref: '#/definitions/BookingResponse'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/bookings/{bookingId}':
+    delete:
+      tags:
+        - admin
+      operationId: AdminDeleteBooking
+      summary: Admin - Delete a booking
+      description: Allows an admin to delete any booking from the system.
+      security:
+        - bearerToken: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          type: string
+          description: UUID of the booking to delete.
+      responses:
+        200:
+          description: Booking deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Booking not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/tours':
+    post:
+      tags: 
+        - admin
+      operationId: AdminCreateTour
+      summary: Admin - Create a new tour
+      description: Allows an admin to directly create a new tour on behalf of a partner. Uses the same request body as the partner tour creation endpoint.
+      security:
+        - bearerToken: []
+      parameters:
+        - name: partnerId
+          in: query
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the partner for whom the tour is being created.
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/CreateTourRequest'
+      responses:
+        201:
+          description: Tour created successfully
+          schema:
+            $ref: "#/definitions/TourResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+    get:
+      tags:
+        - admin
+      operationId: AdminListTours
+      summary: Admin view of all tours with admin-specific data
+      security:
+        - bearerToken: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of items to return
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip
+        - name: partnerId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Filter tours by specific Partner UUID
+      responses:
+        200:
+          description: List of all tours
+          schema:
+            $ref: '#/definitions/TourAdminListResponse'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/tours/{tourId}':
+    put:
+      tags: 
+        - admin
+      operationId: AdminUpdateTour
+      summary: Admin - Update a tour
+      description: Allows an admin to update an existing tour on behalf of a partner. 
+      security:
+        - bearerToken: []
+      parameters:
+        - name: tourId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the tour to update.
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/CreateTourRequest'
+      responses:
+        200:
+          description: Tour updated successfully
+          schema:
+            $ref: "#/definitions/TourResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      tags: 
+        - admin
+      operationId: AdminDeleteTour
+      summary: Admin - Delete a tour
+      description: Allows an admin to delete an existing tour on behalf of a partner.
+      security:
+        - bearerToken: []
+      parameters:
+        - name: tourId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the tour to delete.
+      responses:
+        200:
+          description: Tour deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/search':
+    get:
+      tags:
+        - admin
+      operationId: AdminGlobalSearch
+      summary: Global search across partners, tours, and bookings
+      security:
+        - bearerToken: []
+      parameters:
+        - name: query
+          in: query
+          type: string
+          required: true
+          description: Search query string
+      responses:
+        200:
+          description: Search results
+          schema:
+            $ref: '#/definitions/AdminSearchResponse'
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+        500:
+          description: Internal Server Error
+
+  '/v1/admin/users':
+    get:
+      tags:
+        - admin
+      operationId: AdminListUsers
+      summary: Admin view of all users
+      description: Retrieve a paginated list of all users for the admin dashboard.
+      security:
+        - bearerToken: []
+      parameters:
+        - name: search
+          in: query
+          type: string
+          description: Optional search term to filter by user name, email, or mobile number
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of items to return
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip
+      responses:
+        200:
+          description: List of all users
+          schema:
+            type: object
+            properties:
+              users:
+                type: array
+                items:
+                  $ref: '#/definitions/UserResponse'
+              total:
+                type: integer
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  '/v1/admin/users/{userId}':
+    delete:
+      tags:
+        - admin
+      operationId: AdminDeleteUser
+      summary: Admin - Delete a user
+      description: Allows an admin to completely remove a user and their associated data from the system.
+      security:
+        - bearerToken: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the user to delete.
+      responses:
+        200:
+          description: User deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden (Not an admin)
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: User not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+  '/v1/tours':   
+    get:
+      tags: 
+       - tours
+      operationId: ListTours
+      summary: List all tours with comprehensive filtering
+      security:
+        - APIkey: []
+      parameters:
+        - name: search
+          in: query
+          type: string
+          description: Search by tour name, location, or description
+        - name: dateFrom 
+          in: query
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Filter tours available starting from this date (inclusive).
+            Format: UNIX timestamp in seconds (e.g., 1704067200 for 2024-01-01).
+          x-example: 1704067200
+        - name: dateTo
+          in: query
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Filter tours available starting from to this date (inclusive).
+            Format: UNIX timestamp in seconds (e.g., 1704067200 for 2024-01-01).
+          x-example: 1704067200      
+        - name: minTravellers
+          in: query
+          type: integer
+          minimum: 1
+          description: Filter tours with capacity for at least this many travellers
+        - name: maxPrice
+          in: query
+          type: number
+          format: double
+          description: Maximum price filter
+        - name: state
+          in: query
+          type: string
+          description: Filter by state
+        - name: pinCode
+          in: query
+          type: integer
+          description: Filter by pincode
+        - name: availability
+          in: query
+          type: string
+          enum: [available, few_seats_left, sold_out]
+          description: Filter by availability status
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          maximum: 100
+          description: Number of items to return (max 100)
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip
+        - name: reserveName
+          in: query
+          type: string
+          description: Filter by reserve name
+        - name: partnerName
+          in: query
+          type: string
+          description: Filter by partner name
+        - name: partnerId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Filter by partner ID
+      responses:
+        200:
+          description: List of tours with pagination
+          schema:
+            $ref: "#/definitions/TourListResponse"
+        400:
+          description: Invalid filter parameters
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/tours/{tourId}':
+    get:
+      tags: 
+       - tours
+      operationId: GetTour
+      summary: Get tour by ID
+      security:
+        - APIkey: []
+      parameters:
+        - name: tourId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the tour
+      responses:
+        200:
+          description: Tour details
+          schema:
+            $ref: "#/definitions/TourResponse"
+        404:
+          description: Tour not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      tags: 
+       - tours
+      operationId: UpdateTour
+      summary: Update tour
+      security:
+        - bearerToken: []
+      parameters:
+        - name: tourId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the tour
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/TourRequest'
+      responses:
+        200:
+          description: Tour updated successfully
+          schema:
+            $ref: "#/definitions/TourResponse"
+        404:
+          description: Tour not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      tags: 
+       - tours
+      operationId: DeleteTour
+      summary: Delete tour
+      security:
+        - bearerToken: []
+      parameters:
+        - name: tourId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the tour
+      responses:
+        200:
+          description: Tour deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        404:
+          description: Tour not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/tours/{tourId}/availability':
+   parameters:
+    - name: tourId
+      in: path
+      required: true
+      type: string
+      description: UUID of the tour
+   get:
+    tags:
+      - tours
+    operationId: GetTourAvailability
+    summary: Get availability for a specific tour
+    security:
+      - bearerToken: []
+    responses:
+      200:
+        description: Tour availability details
+        schema:
+          $ref: "#/definitions/TourAvailabilityResponse"
+      404:
+        description: Tour not found
+      default:
+        description: "Error"
+        schema:
+          $ref: '#/definitions/Error'
+   post:
+    tags:
+      - availability
+    summary: Add available seats to a tour
+    operationId: AddToTourAvailability
+    security:
+      - bearerToken: []
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TourAvailabilityRequest'
+    responses:
+      201:
+        description: Tour shows available seats successfully
+        schema:
+          $ref: '#/definitions/Success'
+      400:
+        description: Invalid request payload
+        schema:
+          $ref: '#/definitions/Error'
+      401:
+        description: Unauthorized - Authentication required
+        schema:
+          $ref: '#/definitions/Error'
+      403:
+        description: Forbidden - User cannot perform this action
+        schema:
+          $ref: '#/definitions/Error'
+      404:
+        description: Tour not found
+        schema:
+          $ref: '#/definitions/Error'
+      409:
+        description: Conflict - Tour already in availableSeats
+        schema:
+          $ref: '#/definitions/Error'
+      500:
+        description: Internal server error
+        schema:
+          $ref: '#/definitions/Error'
+      default:
+        description: "Error"
+        schema:
+          $ref: '#/definitions/Error'
+
+  
+  '/v1/wishlist':
+    get:
+      tags:
+        - wishlist
+      summary: Get authenticated user's wishlist
+      operationId: GetUserWishlist
+      security:
+        - bearerToken: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          format: int64
+          default: 20
+          maximum: 100
+        - name: offset
+          in: query
+          type: integer
+          format: int64
+          default: 0
+      responses:
+        200:
+          description: Successful retrieval of wishlist items
+          schema:
+            $ref: "#/definitions/WishlistGetResponse"
+        401:
+          description: Unauthorized - Authentication required
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+    
+    post:
+      tags:
+        - wishlist
+      summary: Add a tour to authenticated user's wishlist
+      operationId: AddToWishlist
+      security:
+        - bearerToken: []
+      parameters:
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/WishlistAddRequest'
+      responses:
+        201:
+          description: Tour added to wishlist successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized - Authentication required
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden - User cannot perform this action
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        409:
+          description: Conflict - Tour already in wishlist
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+    delete:
+      tags:
+        - wishlist
+      summary: Remove a tour from authenticated user's wishlist
+      operationId: RemoveFromWishlist
+      security:
+        - bearerToken: []
+      parameters:
+        - name: wishlistId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: The UUID of the Wishlist to remove from the wishlist. example- 7e1a2b3c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+        - name: tourId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: The UUID of the Tour to remove from the wishlist. example- 7e1a2b3c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+      responses:
+        200:
+          description: Tour removed from wishlist successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Invalid tour ID format
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: Unauthorized - Authentication required
+          schema:
+            $ref: '#/definitions/Error'
+        403:
+          description: Forbidden - User cannot perform this action
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found in wishlist
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+            
+  '/v1/tours/states':
+    get:
+      tags: 
+       - tours
+      operationId: ListStateWiseTours
+      summary: List tours grouped by states with minimal payload
+      description: "Returns state-wise tour counts with minimal data for home screen performance"
+      security:
+        - APIkey: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 50
+          maximum: 100
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+        - name: state
+          in: query
+          type: string
+          description: Filter by specific state name
+        - name: partnerName
+          in: query
+          type: string
+          description: Filter by partner name
+        - name: partnerId
+          in: query
+          type: string
+          description: Filter by specific partner ID 
+      responses:
+        200:
+          description: State-wise tour summary with minimal data
+          schema:
+            type: object
+            properties:
+              states:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    state:
+                      type: string
+                      example: "Kerala"
+                    stateImageUrl:
+                      type: string
+                      example: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?fm=jpg&fit=crop&w=1000&q=80"
+                      description: Kerala is a state in the southwestern region of India...
+                    tourCount:
+                      type: integer
+                      example: 15
+                    stateDescription:
+                      type: string
+                    # Removed full tours array to reduce payload as requested
+              total:
+                type: integer
+              limit:
+                type: integer
+              offset:
+                type: integer
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/tours/featured':
+    get:
+      tags: 
+        - tours
+      operationId: ListFeaturedTours
+      summary: List featured tours
+      security:
+        - APIkey: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+        - name: partnerName
+          in: query
+          type: string
+          description: Filter by partner name
+        - name: partnerId  
+          in: query
+          type: string
+          description: Filter by partner ID
+        
+      responses:
+        200:
+          description: List of featured tours
+          schema:
+            type: object
+            properties:
+              tours:
+                type: array
+                items:
+                  $ref: "#/definitions/TourResponse"
+              total:
+                type: integer
+              limit:
+                type: integer
+              offset:
+                type: integer
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/admin/tours/{tourId}/feature':
+    put:
+      tags: 
+       - tours
+      operationId: SetTourFeatureStatus
+      summary: Update featured status of a tour
+      security:
+        - bearerToken: []
+      parameters:
+        - name: tourId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the tour
+        - in: body
+          name: payload
+          required: true
+          schema:
+            $ref: '#/definitions/FeatureTourRequest'
+      responses:
+        200:
+          description: Tour featured status updated successfully
+          schema:
+            $ref: "#/definitions/TourResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/personalised-list':
+    get:
+      tags: [tours]
+      operationId: GetPersonalisedTourList
+      summary: Get a personalised list of tours for the user (MVP- sequential cycling, will upgrade to recommendations)
+      description: |
+        Returns a paginated, filtered list of tours tailored to the user. Initially, this endpoint cycles through available tours in a fair rotation (MVP), but is designed to support future personalized recommendations based on user activity and preferences. The API contract will remain stable as the backend logic evolves.
+        
+        - For anonymous/new users: returns a rotating list of tours (no personalization).
+        - For logged-in users: will eventually use behavioral data for recommendations.
+        - Supports basic filters for location and budget.
+        - Pagination is supported via limit/offset.
+        - Response format is stable and ready for future upgrades.
+      security:
+        - APIkey: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of tours to return (default 20)
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of tours to skip (for pagination)
+        - name: location
+          in: query
+          type: string
+          required: false
+          description: Filter tours by location (optional)
+        - name: minPrice
+          in: query
+          type: number
+          format: double
+          required: false
+          description: Minimum price filter (optional)
+        - name: maxPrice
+          in: query
+          type: number
+          format: double
+          required: false
+          description: Maximum price filter (optional)
+        - name: partnerName
+          in: query
+          type: string
+          required: false
+          description: Filter tours by partner name (optional)
+        - name: partnerId
+          in: query
+          type: string
+          required: false
+          description: Filter tours by partner ID (optional)
+      responses:
+        200:
+          description: List of tours personalised for the user (MVP- sequential cycling)
+          schema:
+            $ref: '#/definitions/PersonalisedTourListResponse'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/tours/popular':
+    get:
+      tags: 
+       - tours
+      operationId: ListPopularTours
+      summary: List popular tours based on user activity
+      security:
+        - APIkey: []
+      parameters:
+        - name: timeframe
+          in: query
+          type: string
+          enum: [day, week, month]
+          default: week
+          description: Timeframe to consider for popularity calculation
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+        - name: partnerName
+          in: query 
+          type: string
+          description: Filter by partner name
+        - name: partnerId
+          in: query 
+          type: string
+          description: Filter by partner ID
+      responses:
+        200:
+          description: List of popular tours
+          schema:
+            $ref: '#/definitions/PopularTourListResponse'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/tours/best-deals':
+    get:
+      tags: 
+       - tours
+      operationId: ListBestDealTours
+      summary: Get tours with best deals and discounts
+      description: "Returns tours sorted by discount percentage or amount. Includes original and discounted prices."
+      security:
+        - APIkey: []
+      parameters:
+        - name: sortBy
+          in: query
+          type: string
+          enum: [discountPercentage, discountAmount, price]
+          default: discountPercentage
+          description: Sort criteria for best deals
+        - name: order
+          in: query
+          type: string
+          enum: [asc, desc]
+          default: desc
+          description: Sort order (desc for highest discount first)
+        - name: minDiscount
+          in: query
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Minimum discount percentage (0-100)
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          maximum: 50
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+        - name: partnerName
+          in: query
+          type: string
+          description: Filter by partner name
+        - name: partnerId
+          in: query
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Filter by partner ID
+      responses:
+        200:
+          description: List of  est deal tours with discount information
+          schema:
+            type: object
+            properties:
+              tours:
+                type: array
+                items:
+                  $ref: "#/definitions/TourResponse"
+              total:
+                type: integer
+              limit:
+                type: integer
+              offset:
+                type: integer
+        400:
+          description: Invalid parameters
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/mocker/data':
+    post:
+      tags:
+        - "mocker"
+      summary: "Generates mock data for testing purposes"
+      description: "Generates and populates the database with a specified number of mock users, tours, partners, etc."
+      operationId: "generateMockData"
+      consumes:
+        - "application/json"
+      security:
+        - APIkey: []
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/MockDataRequest"
+      responses:
+        "200":
+          description: "Mock data generated successfully"
+          schema:
+            $ref: "#/definitions/Success"
+        "400":
+          description: "Invalid request"
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: "Server error"
+          schema:
+            $ref: "#/definitions/Error"
+    delete:
+      tags:
+        - "mocker"
+      summary: "Clears all mock data from the database"
+      description: "Deletes all data from the users, tours, partners, and wishlist collections."
+      operationId: "clearAllMockData"
+      security:
+        - APIkey: []
+      responses:
+        "200":
+          description: "All mock data cleared successfully"
+          schema:
+            $ref: "#/definitions/Success"
+        "500":
+          description: "Server error"
+          schema:
+            $ref: "#/definitions/Error"
+
+  '/v1/reserves':
+    get:
+      tags:
+        - reserves
+      operationId: ListReserves
+      summary: List all reserves/parks
+      description: Get a list of all reserves and parks available for tours
+      produces:
+        - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: Number of items to return (optional, default 20)
+        - name: name
+          in: query
+          type: string
+          description: Search reserves/parks by name
+        - name: partnerName
+          in: query
+          type: string
+          description: Search reserves/parks by partner name
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: Number of items to skip (optional, default 0)
+        - name: state
+          in: query
+          type: string
+          description: Filter by state 
+      responses:
+        200:
+          description: List of reserves/parks
+          schema:
+            type: object
+            properties:
+              reserves:
+                type: array
+                items:
+                  $ref: "#/definitions/Reserve"
+              total:
+                type: integer
+                description: Total number of reserves/parks
+              limit:
+                type: integer
+                description: Number of items returned per page
+              offset:
+                type: integer
+                description: Number of items skipped for pagination
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/reserves/{reserveId}':
+    get:
+      tags:
+        - reserves
+      operationId: GetReserve
+      summary: Get reserve/park by ID
+      security:
+        - APIkey: []
+      parameters:
+        - name: reserveId
+          in: path
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: UUID of the reserve/park
+      responses:
+        200:
+          description: Reserve/park details
+          schema:
+            $ref: "#/definitions/Reserve"
+        404:
+          description: Reserve/park not found
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/documents/upload':
+    post:
+      tags:
+        - documents
+      operationId: UploadDocument
+      summary: Upload a document (image, PDF, or doc) and receive a URL
+      description: >
+        Allows uploading a document (image, PDF, or doc) and returns a URL for accessing the uploaded file.
+      consumes:
+        - multipart/form-data
+      produces:
+        - application/json
+      security:
+        - bearerToken: []
+        - APIkey: []
+      parameters:
+        - in: formData
+          name: file
+          description: The document file to upload (image, PDF, or doc)
+          required: true
+          type: file
+      responses:
+        201:
+          description: Uploaded successfully
+          schema:
+            $ref: "#/definitions/DocumentUploadResponse"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/Error"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+
+  '/v1/documents/{uuid}':
+    get:
+      tags:
+        - documents
+      operationId: GetDocument
+      summary: Get a document by UUID
+      description: >
+        Retrieves a document for download or inline view by its UUID.
+      produces:
+        - application/octet-stream
+        - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - in: path
+          name: uuid
+          description: UUID of the document to retrieve
+          required: true
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+      responses:
+        200:
+          description: The requested document file
+          schema:
+            
+            $ref: '#/definitions/Success'
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/Error"
+        404:
+          description: Document not found
+          schema:
+            $ref: "#/definitions/Error"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+
+    delete:
+      tags:
+        - documents
+      operationId: DeleteDocument
+      summary: Delete a document by UUID
+      description: Deletes a document using its UUID.
+      produces:
+        - application/json
+      security:
+        - APIkey: []
+      parameters:
+        - in: path
+          name: uuid
+          description: UUID of the document to delete
+          required: true
+          type: string
+      responses:
+        200:
+          description: Document deleted successfully
+          schema:
+            $ref: "#/definitions/Success"
+        400:
+          description: Bad Request
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/definitions/Error"
+        404:
+          description: Document not found
+          schema:
+            $ref: "#/definitions/Error"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+
+  '/v1/external/tripadvisor/search':
+    get:
+      tags:
+        - external-integrations
+      operationId: SearchTripAdvisorHotels
+      summary: Search hotels on TripAdvisor by location
+      description: |
+        Search for hotels/accommodations on TripAdvisor.
+        Returns basic info (name, image, city, state, rating) that can be used to populate StayDetails.
+      security:
+        - APIkey: []
+      parameters:
+        - name: searchQuery
+          in: query
+          required: true
+          type: string
+          description: "Search term (e.g., 'hotels in Goa', 'Taj Mahal Palace Mumbai')"
+        - name: location
+          in: query
+          type: string
+          description: "Filter by location (city or state)"
+        - name: limit
+          in: query
+          type: integer
+          default: 10
+          maximum: 20
+          description: "Maximum number of results to return"
+      responses:
+        200:
+          description: List of hotels from TripAdvisor
+          schema:
+            $ref: '#/definitions/TripAdvisorSearchResponse'
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        401:
+          description: TripAdvisor API authentication failed
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/external/tripadvisor/location/{locationId}':
+    get:
+      tags:
+        - external-integrations
+      operationId: GetTripAdvisorHotelDetails
+      summary: Get detailed hotel information from TripAdvisor
+      description: |
+        Fetch complete hotel details from TripAdvisor using location ID.
+        Use this to auto-fill StayDetails when creating multi-day tours.
+      security:
+        - APIkey: []
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          type: string
+          description: "TripAdvisor location ID (obtained from search results)"
+      responses:
+        200:
+          description: Detailed hotel information
+          schema:
+            $ref: '#/definitions/TripAdvisorHotelDetails'
+        404:
+          description: Hotel not found on TripAdvisor
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+
+  '/v1/booking':
+     get:
+      tags:
+        - bookings
+      operationId: GetBookings
+      summary: Retrieve bookings
+      consumes:              
+        - application/json   
+      description: Get a list of user bookings.
+      security:
+        - bearerToken: [] 
+      parameters:
+        - name: bookingId        
+          in: query
+          required: false            
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: Optional UUID to filter by specific booking
+        - name: type
+          in: query
+          required: false
+          type: string
+          enum: [upcoming, completed, cancelled, history]
+          default: upcoming
+          description: Filter by booking type.
+      responses:
+        200:
+          description: List of bookings
+          schema:
+            type: array         
+            items:
+              $ref: "#/definitions/UpcomingBookingresponse"
+        404:
+          description: No bookings found
+        default:
+          description: "Error"
+          schema:
+            $ref: "#/definitions/Error"
+
+     post:
+      tags:
+        - bookings
+      operationId: CreateBooking
+      summary: Create a new booking
+      security:
+        - bearerToken: []
+      parameters:
+        - name: mode
+          in: query
+          type: string
+          enum: [preview, book]
+          default: book
+          description: Pass 'preview' to get cost details without booking.
+        - in: body
+          name: bookingRequest 
+          required: true
+          schema:
+            $ref: '#/definitions/TourBookingsRequest'
+      responses:
+        201: 
+          description: Booking created
+          schema:
+            $ref: "#/definitions/TourBookingsResponse" 
+        400:
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/Error'
+        404:
+          description: Tour not found
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+
+     delete:
+      tags:
+        - bookings
+      operationId: CancelBooking
+      summary: Cancel a booking or remove a specific traveller
+      parameters:
+        - name: bookingId
+          in: query
+          required: true
+          type: string
+        - name: travellerId
+          in: query
+          required: false
+          type: string
+      responses:
+        200:
+          description: Cancellation successful
+          schema:
+            $ref: "#/definitions/BookingCancelResponse"
+        404:
+          description: Booking not found
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: "Error"
+          schema:
+            $ref: '#/definitions/Error'
+   
+    
+definitions:
+  DocumentUploadResponse:
+    type: object
+    properties:
+      url:
+        type: string
+        format: uri
+        description: URL to access the uploaded document
+      fileName:
+        type: string
+        description: Name of the uploaded file
+      contentType:
+        type: string
+        description: Content type of the uploaded file
+    required:
+      - url
+      - fileName
+      - contentType
+
+  UserDocumentType:
+    type: string
+    description: "Categorizes the identity document uploaded by a normal user."
+    enum:
+      - AADHAR_CARD
+      - PASSPORT
+      - DRIVING_LICENSE
+      - VOTER_ID
+      - OTHER
+    example: "AADHAR_CARD"
+
+  UserDocument:
+    type: object
+    description: "An identity document attached to a user profile."
+    required:
+      - type
+      - url
+    properties:
+      type:
+        $ref: '#/definitions/UserDocumentType'
+      url:
+        type: string
+        format: uri
+        description: "The URL returned from the /documents/upload endpoint."
+        example: "https://storage.googleapis.com/wansafar/uploads/aadhar.jpg"
+      metadata:
+        type: string
+        description: "Optional details (e.g., 'Front View', 'Back Page')."
+        example: "Front View"
+
+  PartnerDocumentType:
+    type: string
+    description: "Categorizes the business/identity document uploaded by a partner."
+    enum:
+      - AADHAR_CARD
+      - PAN_CARD
+      - PASSPORT
+      - DRIVING_LICENSE
+      - VOTER_ID
+      - GST_CERTIFICATE
+      - CIN_NUMBER
+      - BUSINESS_REGISTRATION_PROOF
+      - BANK_ACCOUNT_PROOF
+      - PROFILE_PHOTO
+      - VISA_DOCUMENT
+      - OTHER
+    example: "GST_CERTIFICATE"
+
+  PartnerDocument:
+    type: object
+    description: "A specific document attached to a partner profile or company details."
+    required:
+      - type
+      - url
+    properties:
+      type:
+        $ref: '#/definitions/PartnerDocumentType'
+      url:
+        type: string
+        format: uri
+        description: "The URL returned from the /documents/upload endpoint."
+        example: "https://storage.googleapis.com/wansafar/uploads/gst_cert.pdf"
+      metadata:
+        type: string
+        description: "Optional details (e.g., 'Page 1')."
+        example: "Page 1"
+  
+  Success:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: HTTP status code for the response (e.g. 200, 201)
+      message:
+        type: string
+    
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: HTTP status code for the error (e.g. 400, 401, 404, 500)
+      message:
+        type: string
+    required:
+      - code
+      - message
+    
+  Status:
+    properties:
+      message:
+        type: string
+
+  UserRequest:
+    type: object
+    properties:
+      email:
+        type: string
+        format: email
+      mobileNumber:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      dateOfBirth:
+        type: integer
+        format: int64
+        minimum: 0
+      profileImage:
+        type: string
+        description: Optional
+      documents:
+        type: array
+        description: "List of uploaded user documents"
+        items:
+          $ref: '#/definitions/UserDocument'
+    required:
+      - email
+      - dateOfBirth
+      - firstName
+      - lastName
+      - mobileNumber
+
+  UserResponse:
+    type: object
+    required:
+      - id
+      - firstName
+      - lastName
+      - email
+      - mobileNumber
+      - role
+      - status
+      - createdAt
+      - dateOfBirth
+      - isRegistered
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The UUID of the user.
+        example: 1a2b3c4d-5e6f-7081-9a0b-1c2d3e4f5a6b
+      firstName:
+        type: string
+      lastName:
+        type: string
+      email:
+        type: string
+        format: email
+      mobileNumber:
+        type: string
+        description: User's mobileNumber
+      role:
+        type: array
+        items:
+          $ref: '#/definitions/role'
+      status:
+        type: boolean
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+      isRegistered:
+        type: boolean
+        default: false
+        description: Optional flag for new users
+      dateOfBirth:
+        type: integer
+        format: int64
+      profileImage:
+        type: string
+        format: uri
+        description: Optional
+        example: "https://example.com/profiles/john.jpg"
+      dashboardRole:
+        type: string
+        enum: [admin, user, partner]
+        description: The role of the user in the dashboard
+      partnerId:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The ID of the partner if the user is a partner
+      documents:
+        type: array
+        description: "List of uploaded user documents"
+        items:
+          $ref: '#/definitions/UserDocument'
+      
+  UserProfilePatchRequest:
+    type: object
+    properties:
+      firstName:
+        type: string
+        description: New first name (optional)
+      lastName:
+        type: string
+        description: New last name (optional)
+      email:
+        type: string
+        format: email
+        description: New email (optional)
+      dateOfBirth:
+        type: integer
+        format: int64
+        description: New date of birth as Unix timestamp (optional)
+      mobileNumber:
+        type: string
+        description: New mobile number (optional)
+      preferences:
+        type: object
+        description: User preferences (optional)
+      profileImage:
+        type: string
+        format: uri
+        example: "https://example.com/profiles/john.jpg"
+      documents:
+        type: array
+        description: "List of uploaded user documents"
+        items:
+          $ref: '#/definitions/UserDocument'
+
+  UserProfilePatchResponse:
+    type: object
+    properties:
+      updatedFields:
+        type: object
+        description: Only the fields that were updated
+
+  UserBookingHistoryResponse:
+    type: object
+    properties:
+      total_count:
+        type: integer
+        description: Total number of bookings found
+      bookings:
+        type: array
+        items:
+          $ref: '#/definitions/BookingSummary'
+
+  role:
+    type: string
+    enum: [admin, user, partner]
+
+  BookingSummary:
+    type: object
+    properties:
+      booking_id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: "The unique ID of the booking transaction"
+      booking_status:
+        type: string
+        enum: [upcoming, completed, cancelled, refunded, accepted, rejected]
+      booking_date:
+        type: integer
+        format: int64
+        description: "Timestamp when the user made the booking"
+      total_amount:
+        type: number
+        format: double
+      
+      partner_details:
+        $ref: '#/definitions/BookingPartnerDetails'
+      tour_details:
+        $ref: '#/definitions/BookingTourDetails'
+      travellers:
+        type: array
+        items:
+          $ref: '#/definitions/Traveller'
+
+  BookingPartnerDetails:
+    type: object
+    description: "Snapshot of the partner who owns the tour"
+    properties:
+      partner_id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: "The unique ID of the Partner"
+      company_name:
+        type: string
+        description: "From companyDetails.companyName"
+        example: "Rajesh Royal Safaris"
+      contact_person:
+        type: string
+        description: "From partnerInfo.name"
+        example: "Rajesh Kumar"
+      phone_number:
+        type: string
+        description: "From companyDetails.mobileNumber"
+      email:
+        type: string
+        format: email
+      profile_image:
+        type: string
+        format: uri
+        description: "From partnerInfo.profilePhotoURL"
+
+  BookingTourDetails:
+    type: object
+    description: "Tour snapshot based on TourResponse structure"
+    properties:
+      tour_id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: "The UUID of the Tour" 
+      tour_title:
+        type: string
+        description: "Title of the tour (e.g., Jungle Safari Adventure)"
+      tour_type:
+        type: string
+        enum: ["short day tour", "multi day tours"]
+      location:
+        $ref: '#/definitions/Address'
+      safari_zone:
+        type: string
+        description: "Specific zone info if applicable (e.g., Dhikala Zone)"   
+      duration:
+        type: string
+        description: "Formatted duration (e.g., 4 Hours)"
+      start_date:
+        type: integer
+        format: int64
+        description: "Unix timestamp for when the tour starts"
+      end_date:
+        type: integer
+        format: int64
+        description: "Unix timestamp for when the tour ends"
+      pickup_location:
+        type: string
+        description: "Designated pickup point"
+      drop_location:
+        type: string
+        description: "Designated drop-off point"   
+    
+  Address:
+    type: object
+    properties:
+      address:
+        type: string
+        description: Full address string (optional; addressLine1/2 can be used instead)
+      addressLine1:
+        type: string
+        example: "Flat 402, Sunshine Apartments"
+      addressLine2:
+        type: string
+        example: "MG Road, Near Metro Station"
+      city:
+        type: string
+        example: "Bangalore"
+      state:
+        type: string
+        example: "Karnataka"
+      pinCode:
+        type: integer
+        example: 560001
+      pincode:
+        type: integer
+        description: Alias for pinCode (accepted from some clients)
+      coordinates:
+        type: object
+        properties:
+          latitude:
+            type: number
+            format: double
+            example: 12.9716
+          longitude:
+            type: number
+            format: double
+            example: 77.5946
+
+  PartnerInfo:
+    type: object
+    properties:
+      firstName:
+        type: string
+        example: "Rajesh"
+      lastName:
+        type: string
+        example: "Kumar"
+      dateOfBirth:
+        type: integer
+        example: 567993600
+      email:
+        type: string
+        format: email
+        example: "rajesh.tours@example.com"
+      mobileNumber:
+        type: string
+        example: "+919876543210"
+      profilePhotoURL:
+        type: string
+        format: uri
+        example: "https://storage.googleapis.com/wansafar/profiles/rajesh.jpg"
+      languages:
+        type: array
+        items:
+          type: string
+        example: ["English", "Hindi", "Kannada"]
+      address:
+        $ref: '#/definitions/Address'
+      documents:
+        type: array
+        items:
+          $ref: '#/definitions/PartnerDocument'
+
+  CompanyDetails:
+    type: object
+    required:
+      - companyName
+      - companyMobileNumber
+      - licenseNumber
+      - licenseExpiryDate
+      - address
+    properties:
+      companyName:
+        type: string
+        example: "Rajesh Royal Travels"
+      companyMobileNumber:
+        type: string
+        example: "+919876543211"
+      licenseNumber:
+        type: string
+        example: "TRV-LIC-2023-8899"
+      licenseExpiryDate:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 1761904002
+      gstNumber:
+        type: string
+        example: "29ABCDE1234F1Z5"
+      panNumber:
+        type: string
+        example: "ABCDE1234F"
+      cinNumber:
+        type: string
+        example: "U12345KA2023PTC123456"
+      address:
+        $ref: '#/definitions/Address'
+      documents:
+        type: array
+        items:
+          $ref: '#/definitions/PartnerDocument'
+  
+  PartnerAccountDetails:
+    type: object
+    required:
+      - accountHolderName
+      - bankAccountNumber
+      - bankName
+      - bankIfscCode
+    properties:
+      accountHolderName:
+        type: string
+        example: "Rajesh Kumar"
+      bankAccountNumber:
+        type: string
+        example: "50100099887766"
+      bankName:
+        type: string
+        example: "HDFC Bank"
+      bankIfscCode:
+        type: string
+        example: "HDFC0000329"
+      businessRegistrationNumber:
+        type: string
+        example: "REG-556677"
+      businessType:
+        type: string
+        example: "Sole Proprietorship"
+      city:
+        type: string
+        example: "Bangalore"
+
+  PartnerResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        example: "ef4c49dc-96c8-4809-8591-d0b6b6bfbb91"
+      description:
+        type: string
+        example: "Premium travel partner specializing in corporate bookings."
+        description: "A brief bio or description of the partner company."
+      partnerInfo:
+        $ref: '#/definitions/PartnerInfo'
+      companyDetails:
+        $ref: '#/definitions/CompanyDetails'
+      accountDetails:
+        $ref: '#/definitions/PartnerAccountDetails'
+
+      verificationStatus:
+        type: string
+        enum: [pending, approved, rejected]
+        example: "pending"
+      verificationNotes:
+        type: string
+        example: "Documents verified successfully"
+      isVerified:
+        type: boolean
+        example: false
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 1635264000
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 1635350400
+      tourCount:
+        type: integer
+        example: 0
+      rating:
+        type: number
+        format: float
+        example: 4.5
+      review:
+        type: string
+        example: "Amazing experience"
+      documents:
+        type: array
+        items:
+          $ref: '#/definitions/PartnerDocument'
+
+  PartnerOnboardingRequest:
+    type: object
+    required:
+      - firstName
+      - lastName
+      - dateOfBirth
+      - email
+      - mobileNumber
+      - profilePhotoURL
+      - companyDetails
+      - accountDetails
+      - documents
+    properties:
+      description:  
+        type: string
+        description: "A brief bio of the partner."
+      firstName:
+        type: string
+      lastName:
+        type: string
+      dateOfBirth:
+        type: integer
+      email:
+        type: string
+        format: email
+      mobileNumber:
+        type: string
+      languages:
+        type: array
+        items:
+          type: string
+        example: ["English", "Hindi"]
+      profilePhotoURL:
+        type: string
+        format: uri
+        example: "https://storage.googleapis.com/wansafar/profiles/rajesh.jpg"
+      companyDetails:
+        $ref: '#/definitions/CompanyDetails'
+      accountDetails:
+        $ref: '#/definitions/PartnerAccountDetails'
+      documents:
+        type: array
+        description: "List of documents proving identity and business registration."
+        items:
+          $ref: '#/definitions/PartnerDocument'
+    
+  AdminSelfUpdateRequest:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Optional
+      password:
+        type: string
+        format: password
+        description: Optional, only for changing own password
+    
+  PartnerAdminResponse:
+    allOf:
+      - $ref: '#/definitions/PartnerResponse'
+      - type: object
+        properties:
+          submittedAt:
+            type: integer
+            format: int64
+            minimum: 0
+          lastReviewedBy:
+            type: string
+            description: Optional
+          reviewedAt:
+            type: integer
+            format: int64
+            minimum: 0
+
+  BookingResponse:
+    type: object
+    properties:
+      bookings:
+        type: array
+        items:
+          $ref: '#/definitions/UpcomingBookingresponse'
+      total:
+        type: integer
+        description: Total number of bookings in the database matching the criteria
+      limit:
+        type: integer
+      offset:
+        type: integer
+      
+  PartnerVerificationRequest:
+    type: object
+    required:
+      - verificationStatus
+    properties:
+      verificationStatus:
+        type: string
+        enum: [approved, rejected, pending]
+        description: "The new status to assign. 'approved' activates the partner."
+        example: "approved"
+      verificationNotes:
+        type: string
+        minLength: 5
+        maxLength: 500
+        description: "Reason for rejection or approval notes. Required if status is 'rejected'."
+        example: "Documents verified against the central registry."
+
+  AdminSearchResponse:
+    type: object
+    properties:
+      partners:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+      tours:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+      bookings:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+      users:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+
+  AdminSigninRequest:
+    type: object
+    required:
+      - email
+      - password
+    properties:
+      email:
+        type: string
+        format: email
+        example: "owner@wansafar.com"
+      password:
+        type: string
+        example: "OwnerSecurePassword123" 
+  
+  TourAdminListResponse:
+    type: object
+    required:
+      - tours
+      - total
+    properties:
+      tours:
+        type: array
+        items:
+          allOf:
+            - $ref: '#/definitions/TourResponse'
+            - type: object
+              description: "Admin specific extensions to the standard tour object"
+              properties:
+                metrics:
+                  type: object
+                  description: "Performance metrics for the admin dashboard"
+                  properties:
+                    totalBookings:
+                      type: integer
+                      description: "Total number of successful bookings"
+                      example: 45
+                    totalRevenue:
+                      type: number
+                      format: double
+                      description: "Total revenue generated by this tour"
+                      example: 150000.00
+                    conversionRate:
+                      type: number
+                      format: float
+                      description: "Percentage of views that resulted in bookings"
+                      example: 2.5
+                    viewCount:
+                      type: integer
+                      description: "Total page views"
+                      example: 1250
+                adminMetadata:
+                  type: object
+                  description: "Internal admin operations data"
+                  properties:
+                    verifiedBy:
+                      type: string
+                      format: uuid
+                      description: "Admin ID who last verified/approved this tour"
+                    verifiedAt:
+                      type: integer
+                      format: int64
+                      description: "Timestamp of last verification"
+                    rejectionReason:
+                      type: string
+                      description: "If status is REJECTED, this contains the reason"
+                    internalNotes:
+                      type: string
+                      description: "Private notes for admins regarding this tour"
+      total:
+        type: integer
+        description: Total number of tours available
+      limit:
+        type: integer
+        description: Number of items per page
+      offset:
+        type: integer
+        description: Number of items skipped
+  
+  AdminSigninResponse:
+    type: object
+    required:
+      - tokens
+      - admin
+    properties:
+      tokens:
+        $ref: '#/definitions/AuthTokens'
+      admin:
+        $ref: '#/definitions/AdminResponse'
+        
+  AuthTokens:
+    type: object
+    properties:
+      accessToken:
+        type: string
+        description: The JWT access token for authentication.
+      refreshToken:
+        type: string
+        description: The refresh token for obtaining new access tokens.
+      atTime:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Expiration timestamp (epoch seconds) for the access token.
+      rtTime:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Expiration timestamp (epoch seconds) for the refresh token.
+
+  AdminCreateRequest:
+    type: object
+    required:
+      - name
+      - email
+      - password
+    properties:
+      name:
+        type: string
+        example: "New Manager Name"
+      email:
+        type: string
+        format: email
+        example: "manager@wansafar.com"
+      password:
+        type: string
+        description: Password for the new admin account
+        example: "NewManagerPass123"
+
+  AdminResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The UUID of the partner.
+        example: 2b3c4d5e-6f70-8a9b-0c1d-2e3f4a5b6c7d
+      name:
+        type: string
+      email:
+        type: string
+        format: email
+      role:
+        $ref: '#/definitions/role' 
+      isActive:
+        type: boolean
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+
+  RatingInfo:
+    type: object
+    properties:
+      averageRating:
+        type: number
+        format: float
+        minimum: 1
+        maximum: 10
+        example: 8.4
+      totalReviews:
+        type: integer
+        example: 42
+      reviews:
+        type: array
+        items:
+          $ref: '#/definitions/Review'
+
+  Review:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+      rating:
+        type: integer
+        minimum: 1
+        maximum: 10
+      review:
+        type: string
+      reviewer:
+        type: string
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+
+  MainDescription:
+    type: object
+    properties:
+      overview:
+        type: string
+        example: "A comprehensive tour exploring the beautiful beaches of Kerala"
+      highlights:
+        type: array
+        items:
+          type: string
+        example: ["Private beach access", "Sunset photography", "Local culture"]
+      experience:
+        type: string
+        example: "Immerse yourself in the coastal lifestyle"
+      points:
+        type: array
+        items:
+          type: string
+        example: ["Day 1: Arrival and orientation", "Day 2: Beach activities", "Day 3: Departure"]
+
+  TourRequestPackage:
+    type: object
+    required: [originalPrice]
+    properties:
+      code:
+        type: string
+        example: "INR"
+        description: Currency code (optional; can be empty)
+      originalPrice:
+        type: number
+        description: Original price before discount
+      discountedPrice:
+        type: number
+        description: Current discounted price
+      discountedPercentage:
+        type: number
+        description: Discount percentage (preferred)
+      discountPercentage:
+        type: number
+        description: Alias for discountedPercentage (same value)
+      exchangeRate:
+        type: object
+        properties:
+          rate:
+            type: number
+            format: double
+            example: 1.0
+          baseCode:
+            type: string
+            example: "USD"
+      timestamp:
+        type: integer
+        format: int64
+        minimum: 0
+
+  TourRequest:
+    type: object
+    required: [reserve_id, name, location, duration, package, maxCapacity, dateFrom, dateTo]
+    properties:
+      reserve_id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        example: "53327f25-d789-424c-a6f5-6ea188e68b9a"
+        description: The UUID of the Reserve to which the tour belongs.
+      name:
+        type: string
+        example: "Deluxe Beach Tour Kerala"
+      schedule:   
+        $ref: "#/definitions/TourSchedule"
+      location:
+        type: object
+        $ref: '#/definitions/Address'
+      duration:
+        type: string
+        example: "3D/2N"
+      package:
+        $ref: '#/definitions/TourRequestPackage'
+      dateFrom:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 1761904002
+      dateTo:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 1761904002
+      heroImage:
+        type: string
+        format: uri
+        description: URL of the hero image
+        example: "https://example.com/hero.jpg"
+      images:
+        type: array
+        items:
+          type: string
+          format: uri
+        example: ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
+      description:
+        type: string
+        example: "Experience the beautiful beaches of Kerala"
+      pointWiseTourInfo:
+        type: array
+        items:
+          $ref: '#/definitions/TourPointWiseInfo'
+      inclusions:
+        type: array
+        items: 
+          $ref: '#/definitions/InclusionDetail'
+        example: 
+          - title: "Mobile Ticketing"
+            description: "Digital entry ticket"
+          - title: "Pickup & Drop-off"
+            description: "Hotel transfer included"
+      autoApproveBookingRequests:
+        type: boolean
+        description: Direct flag to auto-approve bookings without manual intervention.
+      isFeatured:
+        type: boolean
+        default: false
+      featuredOrder:
+        type: integer
+        example: 1
+      featuredBadge:
+        type: string
+        example: "Editor's Choice"
+      featuredFrom:
+        type: integer
+        format: int64
+        minimum: 0
+        example: "1761817600"
+      featuredUntil:
+        type: integer
+        format: int64
+        minimum: 0
+        example: "1764429600"
+      partner:
+        $ref: '#/definitions/PartnerResponse'
+      accommodation:
+        $ref: '#/definitions/Accommodation'
+      stayDetails:
+        $ref: '#/definitions/StayDetails'
+      itinerary:
+        type: array
+        items:
+          $ref: '#/definitions/ItineraryDay'
+      pickupDetails:
+        $ref: '#/definitions/PickupDetails'
+      maxCapacity:
+        type: integer
+        example: 10
+      isLiveTourPartner:
+        type: boolean
+        default: false
+      bookingDeadline:
+        type: integer
+        format: int64
+        minimum: 0
+        example: "1761817600"
+      cancellationPolicy:
+        type: string
+        enum: [flexible, moderate, strict]
+        default: moderate
+      highlights:
+        type: array
+        items:
+          type: string
+        example: ["Private boat", "Local cuisine tasting"]
+      listingCount:
+        type: integer
+        example: 5
+      showListingCount:
+        type: boolean
+        default: true
+      showRatingAndReviews:
+        type: boolean
+        default: true
+      userBookingStatus:
+        $ref: '#/definitions/TourBookingStatus'
+      partnerTourStatus:
+        $ref: '#/definitions/PartnerTourStatus'
+      partnerTourType:
+        $ref: '#/definitions/PartnerTourType'
+      mainDescription:
+        $ref: '#/definitions/MainDescription'
+      nightsCount:
+        type: integer
+        readOnly: true
+        example: 2
+
+  TourResponse:
+    allOf:
+      - type: object
+        required: [id, reserves, name, heroImage, description, duration, dateFrom, dateTo, package, availableSeats, maxCapacity, availabilityStatus, partner, createdAt, updatedAt]
+        properties:
+          id:
+            type: string
+            format: uuid
+            pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+            example: "53327f25-d789-424c-a6f5-6ea188e68b9a"
+          selectedInclusions: 
+            type: array
+            items:
+              type: string
+          selectedExclusions:   
+            type: array
+            items:
+              type: string
+          reserves:
+            type: object
+            description: Reserve/park info for card (name, state) and link (id).
+            required: [id, name, state, city]
+            properties:
+              id:
+                type: string
+                format: uuid
+                pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+                example: "53327f25-d789-424c-a6f5-6ea188e68b9a"
+              name:
+                type: string
+                example: "Ranthambore Tiger Reserve"
+              state:
+                type: string
+                description: "State where the reserve is located"
+                example: "Rajasthan"
+              city:
+                type: string
+                description: "City where the reserve is located"
+                example: "Sawai Madhopur"
+              images:
+                type: array
+                items:
+                  type: string
+                  format: uri
+              
+          info:
+            type: object
+            description: Internal/tour info (tourTitle, tourType, status, etc.)
+            properties:
+              tourTitle:
+                type: string
+              tourType:
+                type: string
+                example: "SHORT"
+              languages:
+                type: array
+                items:
+                  type: string
+              description:
+                type: string
+              images:
+                type: array
+                items:
+                  type: string
+                  format: uri
+              address:
+                $ref: '#/definitions/Address'
+              autoApproveBookingRequests:
+                type: boolean
+              isActive:
+                type: boolean
+              status:
+                type: string
+                example: "PENDING"
+          schedule:
+            type: object
+            description: Schedule (day, time, frequency, date range)
+            properties:
+              day:
+                type: string
+                example: "Thursday"
+              time:
+                type: string
+                example: "06:12 AM"
+              duration:
+                type: string
+              frequency:
+                type: string
+                example: "WEEKLY"
+              dateFrom:
+                type: integer
+                format: int64
+              dateTo:
+                type: integer
+                format: int64
+              totalSafaris:
+                type: integer
+                format: int32
+              safariZones:
+                type: array
+                items:
+                  type: string
+                description: List of safari zones for this tour.
+          capacityAndPricing:
+            type: object
+            description: Capacity and pricing breakdown
+            properties:
+              totalSeats:
+                type: integer
+              bookedSeats:
+                type: integer
+              pricePerPerson:
+                type: number
+              waitlistedSeats:
+                type: integer
+          logistics:
+            type: object
+            description: Pickup/drop logistics
+            properties:
+              isPickupAvailable:
+                type: boolean
+              pickupLocation:
+                type: string
+              dropLocation:
+                type: string
+              pickupLocations:
+                type: array
+                items:
+                  type: string
+              dropLocations:
+                type: array
+                items:
+                  type: string
+          availableSeats:
+            type: integer
+            minimum: 0
+            example: 15
+          availabilityStatus:
+            type: string
+            enum: [available, few_seats_left, sold_out, unknown]
+            example: available
+            readOnly: true
+          ratingInfo:
+            $ref: '#/definitions/RatingInfo'
+          difficultyLevel:
+            type: string
+            enum: [easy, moderate, hard]
+            example: moderate
+          isWishlisted:
+            type: boolean
+            example: true
+            readOnly: true
+          createdAt:
+            type: integer
+            format: int64
+            minimum: 0
+            readOnly: true
+          updatedAt:
+            type: integer
+            format: int64
+            minimum: 0
+            readOnly: true
+          name:
+            type: string
+            example: "Deluxe Beach Tour Kerala"
+          location:
+            type: object
+            $ref: '#/definitions/Address'
+          duration:
+            type: string
+            example: "3D/2N"
+          package:
+            $ref: '#/definitions/TourRequestPackage'
+          originalPrice:
+            type: number
+            description: Flattened from package; original price per person
+          discountedPrice:
+            type: number
+            description: Flattened from package; price after discount
+          discountedPercentage:
+            type: number
+            description: Flattened from package; discount percentage
+          currency:
+            type: string
+            example: "INR"
+            description: Flattened from package.code; currency
+          dateFrom:
+            type: integer
+            format: int64
+            minimum: 0
+            example: 1761904002
+          dateTo:
+            type: integer
+            format: int64
+            minimum: 0
+            example: 1761904002
+          heroImage:
+            type: string
+            format: uri
+            description: URL of the hero image
+            example: "https://example.com/hero.jpg"
+          images:
+            type: array
+            items:
+              type: string
+              format: uri
+            example: ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]
+          languages:
+            type: array
+            items:
+              type: string
+            example: ["English", "Hindi"]
+            description: Languages offered for the tour
+          description:
+            type: string
+            example: "Experience the beautiful beaches of Kerala"
+          additionalDetails:
+            type: string
+            description: Extra notes or details
+          pointWiseTourInfo:
+            type: array
+            items:
+              $ref: '#/definitions/TourPointWiseInfo'
+          inclusions:
+            type: array
+            items:
+              $ref: '#/definitions/InclusionDetail'
+            example:
+              - title: "Mobile Ticketing"
+                description: "Digital entry ticket"
+              - title: "Pickup & Drop-off"
+                description: "Hotel transfer included"
+            description: Alias for inclusions (same structure; some clients use this key)
+          autoApproveBookingRequests:
+            type: boolean
+            description: Direct flag to auto-approve bookings without manual intervention.
+          autoApproveBookingRequest:
+            type: boolean
+            description: Alias for autoApproveBookingRequests (singular form)
+          status:
+            type: string
+            example: "PENDING"
+            description: Generic status (e.g. PENDING); see also partnerTourStatus
+          isActive:
+            type: boolean
+            description: Whether the tour is currently active
+          isFeatured:
+            type: boolean
+            default: false
+          featuredOrder:
+            type: integer
+            example: 1
+          featuredBadge:
+            type: string
+            example: "Editor's Choice"
+          featuredFrom:
+            type: integer
+            format: int64
+            minimum: 0
+            example: "1761817600"
+          featuredUntil:
+            type: integer
+            format: int64
+            minimum: 0
+            example: "1764429600"
+          partner:
+            $ref: '#/definitions/PartnerResponse'
+          accommodation:
+            $ref: '#/definitions/Accommodation'
+          stayDetails:
+            $ref: '#/definitions/StayDetails'
+          itinerary:
+            type: array
+            items:
+              $ref: '#/definitions/ItineraryDay'
+          pickupDetails:
+            $ref: '#/definitions/PickupDetails'
+          maxCapacity:
+            type: integer
+            example: 10
+          isLiveTourPartner:
+            type: boolean
+            default: false
+          bookingDeadline:
+            type: integer
+            format: int64
+            minimum: 0
+            example: 1761817600
+          bookingDeadlineMinutes:
+            type: integer
+            format: int64
+            minimum: 0
+            description: Deadline in minutes before tour start
+          cancellationPolicy:
+            type: string
+            enum: [flexible, moderate, strict, FLEXIBLE, MODERATE, STRICT]
+            default: moderate
+            description: "flexible | moderate | strict (case-insensitive variants accepted)"
+          highlights:
+            type: array
+            items:
+              type: string
+            example: ["Private boat", "Local cuisine tasting"]
+          listingCount:
+            type: integer
+            example: 5
+          showListingCount:
+            type: boolean
+            default: true
+          showRatingAndReviews:
+            type: boolean
+            default: true
+          userBookingStatus:
+            $ref: '#/definitions/TourBookingStatus'
+          partnerTourStatus:
+            $ref: '#/definitions/PartnerTourStatus'
+          partnerTourType:
+            $ref: '#/definitions/PartnerTourType'
+          mainDescription:
+            $ref: '#/definitions/MainDescription'
+          nightsCount:
+            type: integer
+            readOnly: true
+            example: 2
+
+
+  PopularityMetrics:
+    type: object
+    properties:
+      viewCount:
+        type: integer
+      bookingCount:
+        type: integer
+      popularityScore:
+        type: number
+        format: float
+      trend:
+        type: string
+        enum: [up, down, steady]
+
+  PopularTourResponse:
+    allOf:
+      - $ref: '#/definitions/TourResponse'
+      - type: object
+        properties:
+          popularityMetrics:
+            $ref: '#/definitions/PopularityMetrics'
+
+  Accommodation:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Optional
+      images:
+        type: array
+        items:
+          type: string
+          format: uri
+        description: Optional array of image URLs
+      amenities:
+        type: array
+        items:
+          type: string
+        description: Optional array of amenities
+
+  ItineraryDay:
+    type: object
+    properties:
+      dayNumber:
+        type: integer
+      title:
+        type: string
+        description: Optional
+      activities:
+        type: array
+        items:
+          type: string
+        description: Optional array of activities
+      isCompleted:
+        type: boolean
+        description: Optional, default false
+
+  PickupDetails:
+    type: object
+    properties:
+      description:
+        type: string
+        description: Optional
+      availableLocations:
+        type: array
+        items:
+          type: string
+        description: Optional array of pickup locations
+
+  TourListResponse:
+    type: object
+    properties:
+      tours:
+        type: array
+        items:
+          $ref: "#/definitions/TourResponse"
+      total:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+
+  StateWiseTourListResponse:
+    type: object
+    properties:
+      states:
+        type: array
+        items:
+          type: object
+          properties:
+            state:
+              type: string
+              example: "Kerala"
+            stateImage:
+              type: string
+              format: uri
+              example: "https://example.com/states/kerala.jpg"
+            tourCount:
+              type: integer
+              example: 15
+      total:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+
+  FeatureTourRequest:
+    type: object
+    required: [featuredOrder]
+    properties:
+      isFeatured:
+        type: boolean
+        default: true
+      featuredOrder:
+        type: integer
+        description: Priority order for featured tours (1 = highest priority)
+      featuredBadge:
+        type: string
+        description: Badge text like "Editor's Choice", "Popular", "Seasonal Special"
+      featuredFrom:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Unix timestamp for when the featured tour starts
+      featuredUntil:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Unix timestamp for when the featured tour ends
+
+  PopularTourListResponse:
+    type: object
+    properties:
+      tours:
+        type: array
+        items:
+          $ref: "#/definitions/PopularTourResponse"
+      total:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+        
+  WishlistAddRequest:
+    type: object
+    required:
+      - tourId
+    properties:
+      tourId:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The ID of the Tour to add to the wishlist.
+        example: 7e1a2b3c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+
+  WishlistEntryResponse:
+    type: object
+    required:
+      - id
+      - userId
+      - tour
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The UUID of the wishlist entry itself.
+        example: 7e1a2b3c-4d5e-6f70-8a9b-0c1d2e3f4a5b
+      userId:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The UUID of the user who owns this wishlist item.
+        example: 1a2b3c4d-5e6f-7081-9a0b-1c2d3e4f5a6b
+      tour:
+        $ref: "#/definitions/TourResponse" 
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: The timestamp when this wishlist item was created.
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: The timestamp when this wishlist item was last updated.
+
+  PersonalisedTourResponse:
+    type: object
+    required:
+      - id
+      - name
+      - location
+      - duration
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+      name:
+        type: string
+      location:
+        type: object
+        description: Structured location information
+        properties:
+          address:
+            type: string
+          coordinates:
+            type: object
+            properties:
+              latitude:
+                type: number
+                format: double
+              longitude:
+                type: number
+                format: double
+          nearbyLandmarks:
+            type: array
+            items:
+              type: string
+      package:
+        $ref: '#/definitions/TourRequestPackage'
+      duration:
+        type: string
+      image:
+        type: string
+        format: uri
+        description: Optional main image URL
+      isWishlisted:
+        type: boolean
+        example: false
+        readOnly: true
+        description: Indicates if the tour is in the user's wishlist
+
+  PersonalisedTourListResponse:
+    type: object
+    required:
+      - tours
+      - total
+    properties:
+      tours:
+        type: array
+        items:
+          $ref: '#/definitions/PersonalisedTourResponse'
+        description: List of tours personalised for the user (MVP- sequential cycling)
+      total:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+  WishlistGetResponse:
+    type: object
+    required:
+      - items
+      - total
+    properties:
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/WishlistEntryResponse'
+        description: List of wishlist items with full tour details.
+      total:
+        type: integer
+        format: int64
+        description: The total number of items in the user's wishlist.
+      limit:
+        type: integer
+        format: int64
+        description: The maximum number of items requested per page.
+      offset:
+        type: integer
+        format: int64
+        description: The number of items skipped for pagination.
+
+  TourAvailabilityResponse:
+    type: object
+    required:
+      - availableSeats
+      - maxCapacity
+      - dateFrom  # Added as required
+      - dateTo    # Added as required
+    properties:
+      availableSeats:
+        type: integer
+      maxCapacity:
+        type: integer
+      dateFrom:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Start date of the availability range (Unix timestamp)
+      dateTo:
+        type: integer
+        format: int64
+        minimum: 0
+        description: End date of the availability range (Unix timestamp)
+      status:
+        type: string
+        enum: [available, few_seats_left, sold_out]
+        description: Overall availability status for the requested number of seats
+
+  TourAvailabilityRequest:
+    type: object
+    required:
+      - numberOfSeats
+    properties:
+      numberOfSeats:
+        type: integer
+        description: Number of seats to check availability for the povided tour.
+    
+  MockDataRequest:
+    type: "object"
+    properties:
+      users:
+        type: integer
+        format: "int32"
+        description: "Number of mock users to create."
+        minimum: 0
+      tours:
+        type: integer
+        format: "int32"
+        description: "Number of mock tours to create."
+        minimum: 0
+      partners:
+        type: integer
+        format: "int32"
+        description: "Number of mock partners to create."
+        minimum: 0
+      admins:
+        type: integer
+        format: "int32"
+        description: "Number of mock admins to create."
+        minimum: 0
+      wishlistEntries:
+        type: integer
+        format: "int32"
+        description: "Number of mock wishlist entries to create."
+        minimum: 0
+
+  PartnerSigninRequest:
+    type: object
+    required:
+      - email
+      - password
+    properties:
+      email:
+        type: string
+        format: email
+      password:
+        type: string
+
+  BookingStatusUpdateResponse:
+    type: object
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+      updatedCount:     # new field
+        type: integer
+        description: "Number of bookings modified (useful for bulk actions)"
+
+  Reserve:
+    type: object
+    required:
+      - id
+      - name
+      - location
+      - thumbnail
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The UUID of the reserve/park
+      name:
+        type: string
+        description: Name of the reserve/park
+      description:
+        type: string
+        description: Description of the reserve/park
+      location:
+        $ref: '#/definitions/Address'
+      coordinates:
+        $ref: '#/definitions/ReserveCoordinates'
+      images:
+        type: array
+        items:
+          type: string
+          format: uri
+        description: Array of image URLs for the reserve/park
+      tourCount:
+        type: integer
+        description: Number of tours available at this reserve/park
+      thumbnail:
+        type: string
+        format: uri
+        description: Thumbnail of the reserve/park
+      partner:
+        type: array
+        items:  
+          $ref: '#/definitions/PartnerResponse'
+          description: Partner of the reserve/park
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+  
+  ReserveCoordinates:
+    type: object
+    properties:
+      latitude:
+        type: number
+        format: double
+        description: Latitude coordinate of the reserve/park
+      longitude:
+        type: number
+        format: double
+        description: Longitude coordinate of the reserve/park
+
+  ReserveListResponse:
+    type: object
+    required:
+      - reserves
+      - total
+    properties:
+      reserves:
+        type: array
+        items:
+          $ref: '#/definitions/Reserve'
+        description: List of reserves/parks
+      total:
+        type: integer
+        description: Total number of reserves/parks
+      limit:
+        type: integer
+        description: Number of items returned per page
+      offset:
+        type: integer
+        description: Number of items skipped for pagination
+
+  InclusionDetail:
+    type: object
+    required: [title]
+    properties:
+      title:
+        type: string
+        description: "The title of the inclusion."
+        example: "Mobile Ticketing"
+      description:
+        type: string
+        example: "Digital entry ticket"
+    
+  TourPointWiseInfo:
+    type: object
+    required: [title]
+    properties:
+      title:
+        type: string
+        example: "Whats Included"
+      points:
+        type: array
+        items:
+          type: string
+      images:
+        type: array
+        items:
+          type: string
+          format: uri
+
+  StayDetails:
+    type: object
+    required:
+      - name
+      - imageUrl
+      - city
+      - state
+    properties:
+      name:
+        type: string
+        example: "Taj Mahal Palace Mumbai"
+        description: "Name of the accommodation"
+      imageUrl:
+        type: string
+        format: uri
+        example: "https://media-cdn.tripadvisor.com/media/photo-s/hotel.jpg"
+        description: "Primary image URL for the stay (required)"
+      city:
+        type: string
+        example: "Mumbai"
+        description: "City where the accommodation is located"
+      state:
+        type: string
+        example: "Maharashtra"
+        description: "State where the accommodation is located"
+      description:
+        type: string
+        example: "Historic luxury hotel overlooking the Arabian Sea"
+        description: "Detailed description of the accommodation"
+      images:
+        type: array
+        items:
+          type: string
+          format: uri
+        description: "Additional images gallery (optional)"
+        example:
+          - "https://example.com/hotel-room.jpg"
+          - "https://example.com/hotel-pool.jpg"
+      amenities:
+        type: array
+        items:
+          type: string
+        example: ["Swimming Pool", "Spa", "Restaurant", "Free WiFi", "Parking"]
+        description: "List of amenities available"
+      checkIn:
+        type: string
+        example: "14:00"
+        description: "Check-in time (24-hour format)"
+      checkOut:
+        type: string
+        example: "11:00"
+        description: "Check-out time (24-hour format)"
+      address:
+        $ref: '#/definitions/Address'
+        description: "Full address of the accommodation (optional)"
+      rating:
+        type: number
+        format: float
+        minimum: 0
+        maximum: 5
+        example: 4.5
+        description: "Hotel rating from TripAdvisor or other sources"
+      starCategory:
+        type: integer
+        minimum: 1
+        maximum: 5
+        example: 5
+        description: "Star category (1-5 stars)"
+      phone:
+        type: string
+        example: "+91-22-66653366"
+        description: "Contact phone number"
+      email:
+        type: string
+        format: email
+        example: "reservations@hotel.com"
+        description: "Contact email"
+      website:
+        type: string
+        format: uri
+        example: "https://www.hotel.com"
+        description: "Official website URL"
+      tripadvisorLocationId:
+        type: string
+        example: "304554"
+        description: "TripAdvisor location ID (if hotel was selected from TripAdvisor search)"
+      tripadvisorUrl:
+        type: string
+        format: uri
+        example: "https://www.tripadvisor.in/Hotel_Review-g304554"
+        description: "Direct link to TripAdvisor page"
+      sourceType:
+        type: string
+        enum: [manual, tripadvisor]
+        default: manual
+        description: "Indicates whether data was manually entered or fetched from TripAdvisor"
+
+  TripAdvisorSearchResponse:
+    type: object
+    required:
+      - data
+      - total
+    properties:
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/TripAdvisorHotelSummary'
+        description: "List of hotels matching the search query"
+      total:
+        type: integer
+        description: "Total number of results found"
+        example: 45
+
+  TripAdvisorHotelSummary:
+    type: object
+    required:
+      - locationId
+      - name
+    properties:
+      locationId:
+        type: string
+        description: "TripAdvisor's unique location ID"
+        example: "304554"
+      name:
+        type: string
+        example: "Taj Mahal Palace Mumbai"
+        description: "Hotel name"
+      city:
+        type: string
+        example: "Mumbai"
+        description: "From TripAdvisor address_obj.city"
+      state:
+        type: string
+        example: "Maharashtra"
+        description: "From TripAdvisor address_obj.state"
+      country:
+        type: string
+        example: "India"
+        description: "From TripAdvisor address_obj.country"
+      address:
+        type: string
+        example: "Apollo Bunder, Mumbai 400001"
+        description: "From TripAdvisor address_obj.address_string"
+
+  TripAdvisorHotelDetails:
+    allOf:
+      - $ref: '#/definitions/TripAdvisorHotelSummary'
+      - type: object
+        properties:
+          description:
+            type: string
+            example: "Historic luxury hotel overlooking the Arabian Sea"
+            description: "Detailed hotel description"
+          images:
+            type: array
+            items:
+              type: string
+              format: uri
+            description: "Gallery of hotel images"
+            example:
+              - "https://media-cdn.tripadvisor.com/media/photo-s/01/2e/70/e4/hotel.jpg"
+              - "https://media-cdn.tripadvisor.com/media/photo-s/01/2e/70/e5/room.jpg"
+          amenities:
+            type: array
+            items:
+              type: string
+            example: ["Free WiFi", "Pool", "Spa", "Restaurant", "Parking"]
+            description: "List of available amenities"
+          phone:
+            type: string
+            example: "+91-22-66653366"
+            description: "Contact phone number"
+          email:
+            type: string
+            format: email
+            example: "reservations@tajhotels.com"
+            description: "Contact email"
+          website:
+            type: string
+            format: uri
+            example: "https://www.tajhotels.com"
+            description: "Official website"
+          tripadvisorUrl:
+            type: string
+            format: uri
+            example: "https://www.tripadvisor.in/Hotel_Review-g304554"
+            description: "Direct link to TripAdvisor page"
+          coordinates:
+            type: object
+            properties:
+              latitude:
+                type: number
+                format: double
+                example: 18.9220
+              longitude:
+                type: number
+                format: double
+                example: 72.8332
+            description: "Geographic coordinates"
+          starRating:
+            type: integer
+            minimum: 1
+            maximum: 5
+            example: 5
+            description: "Hotel star category"
+          checkIn:
+            type: string
+            example: "14:00"
+            description: "Check-in time"
+          checkOut:
+            type: string
+            example: "11:00"
+            description: "Check-out time"
+          reviews:
+            type: array
+            items:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                text:
+                  type: string
+                author:
+                  type: string
+                date:
+                  type: string
+                  format: date
+            description: "Recent reviews from TripAdvisor (sample)"
+
+  TourBookingStatus:
+    type: string
+    enum: [BOOKED, COMPLETED, CANCELLED, UNDER_REVIEW, REFUND_PROCESSING, ACCEPTED, REJECTED, DRAFT, PUBLISHED]
+
+  PartnerTourStatus:
+    type: string
+    enum: [DRAFT, UNDER_REVIEW, PUBLISHED]
+
+  PartnerTourType:
+    type: string
+    enum: [SHORT, MULTI]
+
+  TourBookingsRequest:
+    type: object
+    required:
+      - travellers
+      - tourId
+    properties:
+      tourId:  
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: UUID of the tour to book
+      travellers:
+        type: array
+        description: List of people travelling.
+        minItems: 1
+        maxItems: 5
+        items:
+          $ref: '#/definitions/Traveller'
+
+  Traveller:
+    type: object
+    required:
+      - name
+      - documentImageUrl
+      - age
+      - phone
+    properties:
+      id:
+        type: string
+        description: Unique identifier for the traveller.
+      name:
+        type: string
+        example: "John Doe"
+      age:
+        type: integer
+        minimum: 0
+        example: 28
+      isPrimary:
+        type: boolean
+        description: Indicates if this is the main contact person.
+        example: true
+      gender:
+        type: string
+        enum: ["Male", "Female", "Other"]
+        example: "Male"
+      phone:
+        type: string
+        example: "+1234567890"
+      documentImageUrl: 
+        type: string
+        description: "URL of the traveller's document image"
+        example: "https://storage.googleapis.com/wansafar/uploads/doc123.jpg"
+      
+
+  TourBookingsResponse:
+    type: object
+    properties:
+      Bookings:
+        type: object
+        description: Confirmation / booking reference details.
+        properties:
+            id:
+              type: string
+              format: uuid
+              pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+              description: Booking ID
+            tourID:
+              type: string
+              format: uuid
+              pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+              description: Tour UUID
+            partnerID:
+              type: string
+              format: uuid
+              pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+              description: Partner UUID 
+            userID:
+              type: string
+              format: uuid
+              pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+              description: User UUID (who made the booking)
+            createdAt:
+              type: integer
+              format: int64
+              minimum: 0
+              description: Booking creation timestamp
+            status:
+              type: string
+              enum: ["Booked","Completed","Cancelled","Under_review","Refund_processing","Accepted","Rejected"]
+              description: Booking status
+            paymentInfo:
+              $ref: '#/definitions/BookingPaymentInfo'
+            travellers:  
+              type: array
+              items:
+               $ref: '#/definitions/Traveller'
+        required:
+           - id
+           - tourID
+           - partnerID
+           - userID
+           - createdAt
+           - status
+           - travellers
+      total:
+        type: integer
+    
+  UpcomingBookingresponse:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: Unique Booking ID
+        example: "d0bcd44e-347e-4788-87e0-f6b9c7f18537"
+      tourId:
+        type: string
+        description: UUID of the tour associated with this booking
+      partnerId:
+        type: string
+        description: UUID of the partner who owns the tour
+      numberOfSeats:
+        type: integer
+        format: int64
+        description: Number of seats reserved
+      cancelledAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Timestamp when booking was cancelled (optional)
+      partner:
+        $ref: '#/definitions/PartnerResponse'
+        description: The partner who owns this tour.
+      status:
+        type: string
+        description: Current status of the booking
+        example: "Booked"
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Timestamp when booking was made
+        example: 1765878065
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Timestamp of last update
+        example: 1765878065
+      tour:
+        type: array
+        description: Array containing tour details (typically one item)
+        items:
+          $ref: '#/definitions/BookingTourInfo'
+      travellers:
+        type: array
+        description: List of travellers in this booking
+        items:
+          $ref: '#/definitions/Traveller'
+      paymentInfo:
+        type: array
+        description: Payment details (typically one item)
+        items:
+          $ref: '#/definitions/BookingPaymentInfo'
+      bookerName:
+        type: string
+        description: Name of the person who made the booking
+        example: "Rahul singh" 
+      createdBy:
+        type: string
+        description: Name of the creator
+        example: "Rahul singh"
+      createdById:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: UUID of the creator
+        example: "755bc113-e5f0-4202-b997-dd7a7ee174c2"
+      partnerActionAllowed:    
+        type: boolean
+        description: "If true, show Accept/Reject buttons. If false, hide them."
+        example: true
+
+  PastTrip:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: Unique Booking ID
+        example: "d0bcd44e-347e-4788-87e0-f6b9c7f18537"
+      status:
+        type: string
+        description: Current status of the booking
+        example: "Booked"
+      createdAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Timestamp when booking was made
+        example: 1765878065
+      updatedAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Timestamp of last update
+        example: 1765878065
+      tour:
+        type: array
+        description: Array containing tour details (typically one item)
+        items:
+          $ref: '#/definitions/BookingTourInfo'
+      travellers:
+        type: array
+        description: List of travellers in this booking
+        items:
+          $ref: '#/definitions/Traveller'
+      paymentInfo:
+        type: array
+        description: Payment details
+        items:
+          $ref: '#/definitions/BookingPaymentInfo'
+      createdBy:
+        type: string
+        description: Name of the creator
+        example: "Rahul singh"
+      createdById:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: UUID of the creator
+        example: "755bc113-e5f0-4202-b997-dd7a7ee174c2"
+
+  BookingTourInfo:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        example: "a0811bbe-9013-4e86-8a13-2e2ab933ef4f"
+      name:
+        type: string
+        example: "Luxury Beach Tour - Goa"
+      state:
+        type: string
+        example: "Goa"
+      reserveState:
+        type: string
+        description: State where the reserve is located
+        example: "Rajasthan"
+      reserveImageUrl:
+        type: string
+        format: uri
+        description: Thumbnail or main image of the reserve
+        example: "https://example.com/reserve.jpg"
+      dateFrom:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Start date as Unix timestamp
+        example: 1768953600
+      dateTo:
+        type: integer
+        format: int64
+        minimum: 0
+        description: End date as Unix timestamp
+        example: 1769040000
+      image:
+        type: string
+        format: uri
+        example: "https://picsum.photos/800/600?random=265"
+      duration:
+        type: string
+        example: "3D/2N"
+      bookedSeats:
+        type: integer
+        description: Number of seats booked
+        example: 10
+      totalSeats:
+        type: integer
+        description: Total number of seats
+        example: 20
+
+  BookingPaymentInfo:
+    type: object
+    required:               
+      - pricePerTraveller
+      - bookingamount
+      - discount
+      - platformfee
+      - totalamount
+    properties:
+      pricePerTraveller:      
+        type: number
+        format: double
+        description: "The base price for a single traveller"
+        example: 5000.00
+      bookingamount:
+        type: number
+        format: double
+        description: Base amount for the booking
+        example: 21815.3685
+      discount:                
+        type: number
+        format: double
+        description: "Total discount applied to this booking"
+        example: 500.00
+      platformfee:
+        type: number
+        format: double
+        description: Platform fee charged
+        example: 100.00
+      tax:
+        type: array
+        description: List of tax components
+        items:
+          $ref: '#/definitions/TaxDetail'
+      totalamount:
+        type: number
+        format: double
+        description: Final amount paid including tax and fees
+        example: 25860.13483
+
+  TaxDetail:
+    type: object
+    properties:
+      gst:
+        type: number
+        example: 18%
+      amount:
+        type: number
+        format: double
+        example: 3944.76633
+
+  BookingCancelResponse:
+    type: object
+    properties:
+      message:
+        type: string
+        example: "Booking cancelled successfully."
+      bookingID:
+        type: string
+        format: uuid
+        pattern: '^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+        description: The ID of the cancelled booking.
+      status:
+        type: string
+        description: The updated status of the booking.
+      cancelledAt:
+        type: integer
+        format: int64
+        minimum: 0
+        description: The timestamp when the booking was cancelled.
+      updatedTravellers:
+        type: array
+        description: The list of remaining travellers (if any).
+        items:
+          $ref: '#/definitions/Traveller'
+  
+  travellers:
+    type: object
+    required:
+      - name
+      - age
+      - isPrimary
+      - gender
+    properties:
+      id:
+        type: string
+        description: Unique identifier for the traveller.
+      name:
+        type: string
+        example: "Rahul singh"
+      age:
+        type: integer
+        format: int64
+        example: 25
+      isPrimary:
+        type: boolean
+        example: true
+      gender:
+        type: string
+        enum: ["Male", "Female", "Other"]
+        example: "Male"
+      phone:
+        type: string
+        example: "+919876543210"
+
+  CreateTourRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - location
+        - tourType
+        - schedule
+        - totalSeats
+        - pricing
+        - content
+        - policies
+        - infoAccurate
+        # - autoApproveBookingRequests
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 140
+          example: "Deluxe Beach Tour Kerala"
+          
+        location:
+         $ref: '#/definitions/Address'
+
+        tourType:
+          type: string
+          enum: [SHORT, MULTI_DAY]
+
+        dayCount:
+          type: integer
+          minimum: 1
+          description: Required when tourType=MULTI_DAY (can also be derived from dates server-side).
+
+        languages:
+          type: array
+          items:
+            type: string
+          description: Languages for this tour (can default from partner profile if omitted).
+
+        reserveId:
+          type: string
+          format: uuid
+          pattern: '^\{?[0-9a-f]{8,12}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$'
+          description: The UUID of the Reserve to which the tour belongs.
+
+        schedule:
+          $ref: "#/definitions/TourSchedule"
+          description: Schedule depends on tourType.
+        
+        totalSeats:
+          type: integer
+          minimum: 1
+          maximum: 9999
+          description: Total number of seats for the tour.
+
+        autoApproveBookingRequests: 
+          type: boolean
+          default: true
+          description: Direct flag to auto-approve bookings without manual intervention.
+
+        pickupDrop:
+          $ref: "#/definitions/PickupDrop"
+          description: Optional. If omitted, treated as available=false.
+
+        pricing:
+          $ref: "#/definitions/TourPricing"
+
+        media:
+          $ref: "#/definitions/TourMedia"
+
+        content:
+          $ref: "#/definitions/TourContent"
+
+        policies:
+          $ref: "#/definitions/TourPolicies"
+
+        infoAccurate:
+          type: boolean
+          description: Mirrors the “I ensure the information provided is accurate” checkbox.
+
+        stayDetails:
+          $ref: "#/definitions/StayDetails"
+          description: Optional. Usually for MULTI_DAY.
+
+        itinerary:
+          type: array
+          items:
+            $ref: "#/definitions/ItineraryDay"
+          description: Optional. Usually for MULTI_DAY.
+
+  TourSchedule:
+    type: object
+    properties: 
+      multiDayTourSchedule:
+        $ref: "#/definitions/MultiDayTourSchedule"
+      shortTourSchedule:
+        $ref: "#/definitions/ShortTourSchedule"
+
+  ShortTourSchedule:
+      type: object
+      additionalProperties: false
+      required: [dateTime, tourFrequency]
+      properties:
+        dateTime:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Start date+time for SHORT tour (Unix timestamp).
+        tourFrequency:
+          type: string
+          enum: [ONE_TIME, DAILY, WEEKLY]
+        durationMinutes:
+          type: integer
+          minimum: 15
+          description: Optional. If your product supports duration for SHORT tours.
+
+  MultiDayTourSchedule:
+      type: object
+      additionalProperties: false
+      required: [startDate, endDate, tourFrequency]
+      properties:
+        safariZones: 
+          type: array
+          items:
+            type: string
+          description: List of specific safari zones (e.g. "Dhikala", "Bijrani") for this schedule.
+        startDate:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Start date as Unix timestamp
+        endDate:
+          type: integer
+          format: int64
+          minimum: 0
+          description: End date as Unix timestamp
+        tourFrequency:
+          type: string
+          enum: [ONE_TIME]
+        totalSafaris:
+          type: integer
+          minimum: 0
+          description: Optional. Only if your UI/logic needs it.
+
+  PickupDrop:
+      type: object
+      additionalProperties: false
+      required: [available]
+      properties:
+        available:
+          type: boolean
+        startingLocation:
+          type: string
+        endLocation:
+          type: string
+        pickupLocations:
+          type: array
+          items:
+            type: string
+        dropLocations:
+          type: array
+          items:
+            type: string
+
+  TourPricing:
+      type: object
+      additionalProperties: false
+      required: [currency, pricePerPerson]
+      properties:
+        currency:
+          type: string
+          example: "INR"
+        pricePerPerson:
+          type: number
+          format: float
+          minimum: 0
+        originalPrice:
+          type: number
+          format: float
+          minimum: 0
+        discountedPrice:
+          type: number
+          format: float
+          minimum: 0
+        discountedPercentage:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+
+  TourMedia:
+      type: object
+      additionalProperties: false
+      properties:
+        heroImage:
+          type: string
+          format: uri
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+
+  TourContent:
+      type: object
+      additionalProperties: false
+      required: [description]
+      properties:
+        description:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        inclusions:
+          type: array
+          items:
+            $ref: "#/definitions/InclusionDetail"
+        pointWiseTourInfo:
+          type: array
+          items:
+            $ref: "#/definitions/TourPointWiseInfo"
+        additionalDetails:
+          type: string
+        selectedInclusions:    
+          type: array
+          items:
+            type: string
+        selectedExclusions:   
+          type: array
+          items:
+            type: string
+
+  TourPolicies:
+      type: object
+      additionalProperties: false
+      required: [cancellationPolicy]
+      properties:
+        bookingDeadline:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Optional. Unix timestamp in seconds. If omitted, server can apply default rules.
+        cancellationPolicy:
+          type: string
+          enum: [FLEXIBLE, MODERATE, STRICT]
+
+  ForgotPasswordRequest:
+    type: object
+    required:
+      - email
+    properties:
+      email:
+        type: string
+        format: email
+        example: "user@example.com"
+
+  ResetPasswordRequest:
+    type: object
+    required:
+      - token
+      - newPassword
+    properties:
+      token:
+        type: string
+        description: The reset token received via email
+      newPassword:
+        type: string
+        format: password
+        example: "NewSecurePassword123"
